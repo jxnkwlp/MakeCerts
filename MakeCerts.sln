@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36121.58
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MakeCerts", "MakeCerts\MakeCerts.csproj", "{A0018129-B1FA-406A-B4C7-B185CD5A9C6F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A0018129-B1FA-406A-B4C7-B185CD5A9C6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0018129-B1FA-406A-B4C7-B185CD5A9C6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0018129-B1FA-406A-B4C7-B185CD5A9C6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0018129-B1FA-406A-B4C7-B185CD5A9C6F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {44A4EB3D-0097-45F8-8666-FA2CCAE70DF0}
+	EndGlobalSection
+EndGlobal
