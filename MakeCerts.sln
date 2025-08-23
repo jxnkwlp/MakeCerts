@@ -5,6 +5,8 @@ VisualStudioVersion = 17.14.36121.58
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MakeCerts", "MakeCerts\MakeCerts.csproj", "{A0018129-B1FA-406A-B4C7-B185CD5A9C6F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MakeCertsTests", "MakeCertsTests\MakeCertsTests.csproj", "{335CB2E9-F8E5-4307-80F7-79465FE1D5DB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{A0018129-B1FA-406A-B4C7-B185CD5A9C6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A0018129-B1FA-406A-B4C7-B185CD5A9C6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A0018129-B1FA-406A-B4C7-B185CD5A9C6F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{335CB2E9-F8E5-4307-80F7-79465FE1D5DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{335CB2E9-F8E5-4307-80F7-79465FE1D5DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{335CB2E9-F8E5-4307-80F7-79465FE1D5DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{335CB2E9-F8E5-4307-80F7-79465FE1D5DB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

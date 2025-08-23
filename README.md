@@ -1,39 +1,42 @@
 # MKCERT
- 
+
+Make a self signed certificate
+
+## Quick start
+
+Generate a certificate and install it on the system
+
 ``` shell
-Description:
-  A tool for create self signed certificate
-
-Usage:
-  mkcert [<subjects>...] [options]
-
-Arguments:
-  <subjects>
-
-Options:
-  -o, --output <output>       [default: certs]
-  -y, --year <year>           [default: 5]
-  -i, --install
-  --ca
-  -root, --root-ca <root-ca>
-  --version                   Show version information
-  -?, -h, --help              Show help and usage information
+mkcert g -i "mysite.com" "10.2.3.4"
 ```
 
-## New CA cert
+## Examples
+
+### New CA cert and install to system
 
 ``` shell
-mkcert --ca -i "myca"
+mkcert ca "mylab" -i 
 ```
 
-## New cert with CA
+### New cert
 
 ``` shell
-mkcert --root "myca" "localhost"
+mkcert g "mysite.com"
+mkcert g "mysite.com" "10.2.3.4"
 ```
 
-## New cert without CA
+### New cert with custom CA
 
 ``` shell
-mkcert "localhost" "myhome.local"
+mkcert g --ca "mylab" "localhost"
+```
+
+### Other options
+
+Use `-h` to show more options
+
+``` shell
+mkcert g -h
+mkcert ca -h
+mkcert i -h
 ```

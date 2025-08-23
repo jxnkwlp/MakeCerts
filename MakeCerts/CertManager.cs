@@ -44,10 +44,21 @@ public static class CertManager
         }
     }
 
-    public static void Save(string rootDir, X509Certificate2 certificate, string? fileName, X509Certificate2? root)
+    public static X509Certificate2 LoadPemFile(string crtPemFile, string? crtKeyPemFile)
     {
-        if (!Directory.Exists(rootDir))
-            Directory.CreateDirectory(rootDir);
+        var certPem = File.ReadAllText(crtPemFile);
+        string? keyPem = null;
+        if (!string.IsNullOrWhiteSpace(crtKeyPemFile))
+            keyPem = File.ReadAllText(crtKeyPemFile);
+
+        return X509Certificate2.CreateFromPem(certPem, keyPem);
+        // return X509Certificate2.CreateFromPemFile(certPem, crtKeyPemFile);
+    }
+
+    public static void Save(X509Certificate2 certificate, string saveDir, string? fileName, bool pfx = false)
+    {
+        if (!Directory.Exists(saveDir))
+            Directory.CreateDirectory(saveDir);
 
         if (string.IsNullOrWhiteSpace(fileName))
         {
@@ -56,40 +67,44 @@ public static class CertManager
                 fileName = fileName.Replace("*", "_wildcard");
         }
 
-        var password = Random.Shared.Next(100000, 999999).ToString();
-
-        File.WriteAllBytes(Path.Combine(rootDir, fileName + ".pdfx"), certificate.Export(X509ContentType.Pfx, password));
-        File.WriteAllText(Path.Combine(rootDir, fileName + " password.txt"), password);
+        File.WriteAllText(Path.Combine(saveDir, fileName + ".crt"), certificate.ExportCertificatePem());
 
         var key = certificate.GetRSAPrivateKey();
+        File.WriteAllText(Path.Combine(saveDir, fileName + ".key"), key!.ExportPkcs8PrivateKeyPem());
+        File.WriteAllText(Path.Combine(saveDir, fileName + ".pub"), key.ExportSubjectPublicKeyInfoPem());
 
-        File.WriteAllText(Path.Combine(rootDir, fileName + ".key"), string.Concat(PemEncoding.Write("PRIVATE KEY", key!.ExportPkcs8PrivateKey())));
-        File.WriteAllText(Path.Combine(rootDir, fileName + ".pub"), string.Concat(PemEncoding.Write("PUBLIC KEY", key.ExportSubjectPublicKeyInfo())));
-
-        //if (root != null)
-        //{
-        //    File.WriteAllText(Path.Combine(rootDir, fileName + ".crt"), string.Concat(PemEncoding.Write("CERTIFICATE", certificate.RawData)));
-        //    File.AppendAllText(Path.Combine(rootDir, fileName + ".crt"), "\n");
-        //    File.AppendAllText(Path.Combine(rootDir, fileName + ".crt"), string.Concat(PemEncoding.Write("CERTIFICATE", root.RawData)));
-        //}
-        //else
-        //{
-        File.WriteAllText(Path.Combine(rootDir, fileName + ".crt"), string.Concat(PemEncoding.Write("CERTIFICATE", certificate.RawData)));
-        //}
+        if (pfx)
+        {
+            var password = Random.Shared.Next(100000, 999999).ToString();
+            File.WriteAllBytes(Path.Combine(saveDir, fileName + ".pfx"), certificate.Export(X509ContentType.Pfx, password));
+            File.WriteAllText(Path.Combine(saveDir, fileName + "_password.txt"), password);
+        }
     }
 
-    public static X509Certificate2 GenerateRootCA(string subject, int year = 10)
+    public static X509Certificate2 GenerateRootCA(string subject, uint year = 10)
     {
         var rsa = RSA.Create(keySizeInBits: 4096);
         var req = new CertificateRequest($"CN={subject} Root CA, OU={subject}, O={Environment.UserName}", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         req.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, false));
-        req.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign, false));
-        // req.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection { new Oid("1.3.6.1.5.5.7.3.1"), new Oid("1.3.6.1.5.5.7.3.2") }, false));
+        req.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign | X509KeyUsageFlags.DigitalSignature, false));
         req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
-        SubjectAlternativeNameBuilder sanBuilder = new SubjectAlternativeNameBuilder();
-        AddAlises(req, [subject]);
+        req.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection {
+            new Oid("1.3.6.1.5.5.7.3.1"), // Server authentication
+            new Oid("1.3.6.1.5.5.7.3.2"), // Client authentication
+            new Oid("1.3.6.1.5.5.7.3.3"), // Code signing
+            new Oid("1.3.6.1.5.5.7.3.4"), // Email protection
+            new Oid("1.3.6.1.5.5.7.3.8"), // Timestamping
+            new Oid("1.3.6.1.5.5.7.3.9"), // OCSP Signing
+            new Oid("1.3.6.1.4.1.311.10.3.4"), // Encrypting file system 
+            //new Oid("1.3.6.1.4.1.311.10.3.4.1"), // File recovery
+            //new Oid("1.3.6.1.5.5.7.3.7"), // IP security user
+            //new Oid("1.3.6.1.5.5.7.3.17"), // IPSec IKE
+            //new Oid("1.3.6.1.5.5.8.2.2"), // IPSec IKE-Intermediate
+            //new Oid("1.3.6.1.5.2.3.5"), // Signing KDC responses
+            //new Oid("1.3.6.1.4.1.311.20.2.2"), // Smart card logon
+        }, false));
 
-        var cert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.Now.AddYears(year));
+        var cert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.Now.AddYears((int)year));
 
 #pragma warning disable CA1416 // Validate platform compatibility
         cert.FriendlyName = subject;
@@ -98,36 +113,36 @@ public static class CertManager
         return cert;
     }
 
-    public static X509Certificate2 GenerateCert(string subject, string[] alises, int year = 5, X509Certificate2? rootCa = null)
+    public static X509Certificate2 GenerateCert(string[] subjects, uint year, X509Certificate2? rootCa = null)
     {
-        var rsa = RSA.Create(keySizeInBits: 4096);
+        var rsa = RSA.Create(keySizeInBits: 2048);
 
-        string subjectName = $"CN={subject}";
-        if (rootCa != null)
-        {
-            var rootSubject = CertSubject.Parse(rootCa.Subject);
-
-            subjectName += $", OU={rootSubject.OU ?? rootSubject.CN}, O={Environment.UserName},";
-        }
+        string subjectName = GetSubjectName(subjects, rootCa);
 
         var req = new CertificateRequest(subjectName, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 
         req.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, false));
         req.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DataEncipherment | X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DigitalSignature, false));
         req.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection {
-            new Oid("1.3.6.1.5.5.7.3.1"),
-           // new Oid("1.3.6.1.5.5.7.3.2")
+            new Oid("1.3.6.1.5.5.7.3.1"), // Server authentication 
         }, false));
         req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
 
-        AddAlises(req, alises.Concat([subject]).ToArray());
+        var sans = new List<string>();
+        foreach (var item in subjects)
+        {
+            sans.Add(item);
+            if (item.StartsWith("*"))
+                sans.Add(item.Remove(0, 2));
+        }
+        AddAlises(req, sans.Distinct().ToArray());
 
         X509Certificate2 cert = null!;
 
         if (rootCa != null)
         {
-            Span<byte> span = stackalloc byte[8];
-            RandomNumberGenerator.Fill(span);
+            Span<byte> serialNumber = stackalloc byte[8];
+            RandomNumberGenerator.Fill(serialNumber);
 
             foreach (var item in rootCa.Extensions)
             {
@@ -148,21 +163,21 @@ public static class CertManager
                 }
             }
 
-            cert = req.Create(rootCa, DateTimeOffset.UtcNow, DateTimeOffset.Now.AddYears(year), span).CopyWithPrivateKey(rsa);
+            cert = req.Create(rootCa, DateTimeOffset.UtcNow, DateTimeOffset.Now.AddYears((int)year), serialNumber).CopyWithPrivateKey(rsa);
         }
         else
         {
-            cert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.Now.AddYears(year));
+            cert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.Now.AddYears((int)year));
         }
 
 #pragma warning disable CA1416 // Validate platform compatibility
-        cert.FriendlyName = subject;
+        cert.FriendlyName = sans.First(x => !x.StartsWith("*"));
 #pragma warning restore CA1416 // Validate platform compatibility
 
         return cert;
     }
 
-    static void AddAlises(CertificateRequest request, params string[] alises)
+    private static void AddAlises(CertificateRequest request, params string[] alises)
     {
         SubjectAlternativeNameBuilder sanBuilder = new SubjectAlternativeNameBuilder();
         foreach (var item in alises)
@@ -177,6 +192,19 @@ public static class CertManager
             }
         }
         request.CertificateExtensions.Add(sanBuilder.Build());
+    }
+
+    public static string GetSubjectName(string[] subjects, X509Certificate2? rootCa = null)
+    {
+        string subjectName = $"CN={subjects[0]}";
+        if (rootCa != null)
+        {
+            var rootSubject = CertSubject.Parse(rootCa.Subject);
+
+            subjectName += $", OU={rootSubject.OU ?? rootSubject.CN}, O={Environment.UserName},";
+        }
+
+        return subjectName;
     }
 }
 
