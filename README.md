@@ -1,3 +1,5 @@
+![NuGet Version](https://img.shields.io/nuget/v/Passingwind.MakeCerts)
+
 # MKCERT
 
 Make a self signed certificate
@@ -7,8 +9,16 @@ Make a self signed certificate
 Generate a certificate and install it on the system
 
 ``` shell
+# install tools
+dotnet tool install --global Passingwind.MakeCerts
+
+# generate
 mkcert g -i "mysite.com" "10.2.3.4"
 ```
+
+## Standalone application
+
+> TODO
 
 ## Examples
 
